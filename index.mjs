@@ -581,11 +581,12 @@ socket_app.on("connection", (socket) => {
     let response = {};
     let id = 0;
     let doneyet = false
+    let requestFailed = false
     
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Student info request recieved`)
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Starting Puppeteer`)
     const browser = await puppeteer.launch({headless: true, "args" : ["--no-sandbox", "--disable-setuid-sandbox"]})
-    socket.emit("message", new Date().toISOString(), `${username.toUpperCase()}: Opening new page`)
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Opening new page`)
     let page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on('request', (req) => {
@@ -621,51 +622,53 @@ socket_app.on("connection", (socket) => {
       } else if (req.url().includes("https://lilydaleheights-vic.compass.education/Services/Calendar.svc/GetCalendarEventsByUser")) {
         if (JSON.parse(req.postData()).homePage === false) {
           let res = await req.response().json()
-          console.log(res)
-          let data = res.d
-          for (var i = 0; i < data.length; i++) {
-            let d = data[i]
-            if (d.activityId !== 0 && d.activityType === 1) {
-              let instanceId = d.instanceId;
-              let title = d.longTitleWithoutTime;
-              let new_title;
-              let room;
-              let teacher;
-              let subject;
-              let classChanged;
-              if (title.includes("1 - ") || title.includes("2 - ") || title.includes("3 - ") || title.includes("4 - ")) {
-                if (title.includes("<strike>")) {
-                  classChanged = 1
-                } else {
-                  classChanged = 0
+          if (!res.h) {
+            let data = res.d
+            for (var i = 0; i < data.length; i++) {
+              let d = data[i]
+              if (d.activityId !== 0 && d.activityType === 1) {
+                let instanceId = d.instanceId;
+                let title = d.longTitleWithoutTime;
+                let new_title;
+                let room;
+                let teacher;
+                let subject;
+                let classChanged;
+                if (title.includes("1 - ") || title.includes("2 - ") || title.includes("3 - ") || title.includes("4 - ")) {
+                  if (title.includes("<strike>")) {
+                    classChanged = 1
+                  } else {
+                    classChanged = 0
+                  }
+                  title = title.split(" - ")
+                  subject = title[1]
+                  if (title[2].includes("&nbsp;")) {
+                    room = title[2].split("&nbsp; ")[1]
+                  } else {
+                    room = title[2]
+                  }
+                  if (title[3].includes("&nbsp;")) {
+                    teacher = title[3].split("&nbsp; ")[1]
+                  } else {
+                    teacher = title[3]
+                  }
                 }
-                title = title.split(" - ")
-                subject = title[1]
-                if (title[2].includes("&nbsp;")) {
-                  room = title[2].split("&nbsp; ")[1]
-                } else {
-                  room = title[2]
-                }
-                if (title[3].includes("&nbsp;")) {
-                  teacher = title[3].split("&nbsp; ")[1]
-                } else {
-                  teacher = title[3]
+                response[instanceId] = {
+                  startDate: new Date(d.start).valueOf(),
+                  endDate: new Date(d.finish).valueOf(),
+                  formattedStart: new Date(d.start).toLocaleTimeString("us-en", { hour: 'numeric', minute: 'numeric', hour12: true }),
+                  formattedEnd: new Date(d.finish).toLocaleTimeString("us-en", { hour: 'numeric', minute: 'numeric', hour12: true }),
+                  classChanged: classChanged,
+                  subject: subject,
+                  teacher: teacher, 
+                  room: room,
+                  text: new_title,
+                  uid: instanceId,
                 }
               }
-              response[instanceId] = {
-                startDate: new Date(d.start).valueOf(),
-                endDate: new Date(d.finish).valueOf(),
-                formattedStart: new Date(d.start).toLocaleTimeString("us-en", { hour: 'numeric', minute: 'numeric', hour12: true }),
-                formattedEnd: new Date(d.finish).toLocaleTimeString("us-en", { hour: 'numeric', minute: 'numeric', hour12: true }),
-                classChanged: classChanged,
-                subject: subject,
-                teacher: teacher, 
-                room: room,
-                text: new_title,
-                uid: instanceId,
-              }
-            }
-
+            } 
+          } else {
+            requestFailed = true
           }
           doneyet = true
         }
@@ -706,9 +709,17 @@ socket_app.on("connection", (socket) => {
     while (doneyet === false) {
       await sleep(100)
     }
-    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Sending response`)
-    await browser.close()
-    socket.emit("data", 200, new Date().toISOString(), "pog it worker", "schedule_data", response )
+    if (requestFailed === true) {
+      await browser.close()
+      socket.emit("error", 400, new Date().toISOString(), `it no worke`, "Compass did not like the dates")
+    } else {
+      socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Sending response`)
+      await browser.close()
+      socket.emit("data", 200, new Date().toISOString(), "pog it worker", "schedule_data", response )
+    }
+    
+    
+    
     return
 
   })
