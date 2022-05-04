@@ -696,7 +696,7 @@ socket_app.on("connection", (socket) => {
       socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Closing browser`)
       await browser.close()
       socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Sending response`)
-      socket.emit("data", 401, new Date().toISOString(), "it no worke", "login failed")
+      socket.emit("error", 401, new Date().toISOString(), "it no worke", "login failed")
       return
     }
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: waiting for compass homepage to load`)
