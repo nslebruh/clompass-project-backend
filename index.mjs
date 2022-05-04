@@ -621,6 +621,7 @@ socket_app.on("connection", (socket) => {
       } else if (req.url().includes("https://lilydaleheights-vic.compass.education/Services/Calendar.svc/GetCalendarEventsByUser")) {
         if (JSON.parse(req.postData()).homePage === false) {
           let res = await req.response().json()
+          console.log(res)
           let data = res.d
           for (var i = 0; i < data.length; i++) {
             let d = data[i]
