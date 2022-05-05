@@ -561,7 +561,7 @@ socket_app.on("connection", (socket) => {
 
   })
   socket.on("getcalender", async (username, password, year, month) => {
-    let day = 1;
+    let day = 30;
     let date = new Date(year, month-1, day)
     let start_date = date.toLocaleDateString().split('/')
     start_date = `${start_date[2]}-${start_date[0]}-${start_date[1]}`
