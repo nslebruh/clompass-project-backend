@@ -1,10 +1,7 @@
 import express from "express";
-import { createServer, request } from "http";
+import { createServer} from "http";
 import { Server } from "socket.io";
-import cors from "cors"
 import puppeteer from "puppeteer"
-import path from "path"
-import e from "cors";
 const PORT = process.env.PORT || 3001;
 
 function sleep(ms) {
@@ -177,6 +174,8 @@ socket_app.on("connection", (socket) => {
     return
   })
   socket.on("schedule", async (username, password) => {
+    console.log("username: ",username)
+    console.log("password: ", password)
     let requestNumber = 0
     let loginFailed = false
     let foundLogin = false
@@ -212,21 +211,25 @@ socket_app.on("connection", (socket) => {
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Navigating to compass site`)
     await page.goto("https://lilydaleheights-vic.compass.education");
     await page.waitForSelector("#username");
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Navigated to compass site`)
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Inputting username`)
     await page.$eval("#username", (el, username) => {
         el.value = username
     }, username)
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Inputted username`)
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Inputting password`)
     await page.$eval("#password", (el, password) => {
         el.value = password
     }, password)
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Inputed password`)
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Clicking login button`)
     await page.$eval("#button1", el => {
         el.disabled = false;
         el.click()
     })
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Clicked login button`)
+    socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Waiting for login response`)
     while (foundLogin === false) {
-      socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Waiting for login response`)
       await sleep(250)
     }
     if (loginFailed === true) {
