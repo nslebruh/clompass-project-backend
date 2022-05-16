@@ -156,7 +156,7 @@ socket_app.on("connection", (socket) => {
       socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Closing puppeteer`)
       await browser.close()
       socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Sending response`)
-      socket.emit("error", 401, new Date.toISOString(), "it no worke", "login failed")
+      socket.emit("error", 401, new Date().toISOString(), "it no worke", "login failed")
       return
     }
     socket.emit("message", 102, new Date().toISOString(), `${username.toUpperCase()}: Waiting for compass homepage to load`)
