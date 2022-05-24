@@ -28,7 +28,7 @@ socket_app.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Client disconnected")
   })
-  socket.on("learningtasks", async (username, password, year = null) => {
+  socket.on("learning_tasks", async (username, password, year = null) => {
     socket.emit("message", 102, new Date().toISOString(), `${username}: request recieved`)
     let years = {"2013": "1", "2014": "2", "2015": "3", "2016": "4", "2017": "5", "2018": "6", "2019": "7", "2020": "12", "2021": "11", "2022": "14", "2023": "15", "2024": "16", "2025": "17"}
     let id = 0
